@@ -11,7 +11,8 @@ gsap.registerPlugin(ScrollTrigger, SplitText);
    --------------------------------------------------------- */
 function initVimeoBGVideo() {
   document.querySelectorAll("[data-vimeo-bg-init]").forEach((vimeoElement, index) => {
-    const vimeoVideoID = vimeoElement.getAttribute("data-vimeo-video-id");
+    const idSource = vimeoElement.querySelector("[data-vimeo-id-source]");
+    const vimeoVideoID = (idSource && idSource.textContent.trim()) || vimeoElement.getAttribute("data-vimeo-video-id");
     if (!vimeoVideoID || typeof Vimeo === "undefined") return;
 
     const vimeoVideoURL = `https://player.vimeo.com/video/${vimeoVideoID}?api=1&background=1&autoplay=0&loop=1&muted=1`;
@@ -127,6 +128,11 @@ function initCSSMarquee() {
    --------------------------------------------------------- */
 function initTabSystem() {
   document.querySelectorAll('[data-tabs="wrapper"]').forEach((wrapper) => {
+     // Afbeeldingen uit de Tab stappen naar het beeldvlak verplaatsen
+      const visualList = wrapper.querySelector('[data-tabs="visual-list"]') || wrapper.querySelector('.howitworks_visual');
+      if (visualList) {
+     wrapper.querySelectorAll('[data-tabs="content-item"] [data-tabs="visual-item"]').forEach((v) => visualList.appendChild(v));
+      }
     const contentItems = wrapper.querySelectorAll('[data-tabs="content-item"]');
     const visualItems = wrapper.querySelectorAll('[data-tabs="visual-item"]');
     if (!contentItems.length) return;
