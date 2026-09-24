@@ -1,0 +1,99 @@
+/* =========================================================
+   Marboma – site-wide CSS
+   Wordt ingeladen via jsDelivr vanuit GitHub (niice-nocode/marboma)
+   ========================================================= */
+
+/* ---------------------------------------------------------
+   Underline link hover
+   data-underline-link    = element met het lijntje
+   data-underline-trigger = (optioneel) ouder-element dat de hover activeert
+   --------------------------------------------------------- */
+[data-underline-link] {
+  position: relative;
+}
+[data-underline-link]::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: var(--underline-offset, 0rem);
+  height: 0.0625rem;
+  background-color: currentColor;
+  transform: scaleX(0);
+  transform-origin: right center;
+  transition: transform 600ms cubic-bezier(0.77, 0, 0.175, 1);
+}
+@media (hover: hover) {
+  [data-underline-link]:hover::after,
+  [data-underline-trigger]:hover [data-underline-link]::after {
+    transform: scaleX(1);
+    transform-origin: left center;
+  }
+}
+.navbar_link[data-underline-link] {
+  --underline-offset: 0.5rem;
+}
+
+/* ---------------------------------------------------------
+   Vimeo achtergrondvideo (Osmo)
+   --------------------------------------------------------- */
+.vimeo-bg_component[data-vimeo-activated="true"][data-vimeo-loaded="true"] .vimeo-bg_placeholder {
+  opacity: 0;
+  transition-delay: 0.2s;
+}
+
+/* ---------------------------------------------------------
+   CSS marquee (Osmo)
+   --------------------------------------------------------- */
+@keyframes translateX {
+  to { transform: translateX(-100%); }
+}
+[data-css-marquee-list] {
+  animation: translateX 30s linear;
+  animation-iteration-count: infinite;
+  animation-play-state: paused;
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-css-marquee-list] { animation: none; }
+}
+
+/* ---------------------------------------------------------
+   Tab system (Osmo)
+   --------------------------------------------------------- */
+.howitworks_tabs:has(.howitworks_tab.active) .howitworks_tab:not(.active) {
+  opacity: 0.5;
+}
+@media (hover: hover) and (pointer: fine) {
+  .howitworks_tab:not(.active):hover {
+    opacity: 0.8;
+  }
+}
+
+/* ---------------------------------------------------------
+   Review slider line reveal (Osmo)
+   --------------------------------------------------------- */
+.text-line-mask {
+  padding-bottom: 0.2em;
+  margin-bottom: -0.2em;
+}
+
+/* ---------------------------------------------------------
+   Parallax: geen compensatie als beweging uit staat
+   --------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .over_grid { margin-bottom: 0; }
+}
+
+/* ---------------------------------------------------------
+   Form validation (Osmo)
+   --------------------------------------------------------- */
+[data-validate].is--error input,
+[data-validate].is--error textarea {
+  border-color: var(--base-color-system--required-red);
+}
+[data-validate].is--error .form-field-icon.is--error {
+  opacity: 1;
+}
+[data-validate].is--success .form-field-icon.is--success {
+  opacity: 1;
+}
