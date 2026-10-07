@@ -1,7 +1,87 @@
 /* =========================================================
    Marboma – site-wide CSS
    Wordt ingeladen via jsDelivr vanuit GitHub (niice-nocode/marboma)
+   Versie: v1.2.0
    ========================================================= */
+
+/* ---------------------------------------------------------
+   Fluid scaling (Osmo)
+   Alles in rem schaalt mee met de schermbreedte.
+   1rem = 16px op de "ideale" breedte per breakpoint.
+   --------------------------------------------------------- */
+:root {
+  --size-unit: 16;              /* body font-size in het design */
+  --size-container-ideal: 1500; /* schermbreedte van het Figma-design */
+  --size-container-min: 992px;
+  --size-container-max: 1920px;
+  --size-container: clamp(var(--size-container-min), 100vw, var(--size-container-max));
+  --size-font: calc(var(--size-container) / (var(--size-container-ideal) / var(--size-unit)));
+}
+@media screen and (max-width: 991px) {
+  :root {
+    --size-container-ideal: 834;
+    --size-container-min: 768px;
+    --size-container-max: 991px;
+  }
+}
+@media screen and (max-width: 767px) {
+  :root {
+    --size-container-ideal: 550;
+    --size-container-min: 480px;
+    --size-container-max: 767px;
+  }
+}
+@media screen and (max-width: 479px) {
+  :root {
+    --size-container-ideal: 390;
+    --size-container-min: 320px;
+    --size-container-max: 479px;
+  }
+}
+html {
+  font-size: var(--size-font);
+}
+
+/* ---------------------------------------------------------
+   Page transition
+   Overlay op html::after, aangestuurd door marboma.js.
+   Staat niet als element in Webflow (niets aan/uit te zetten).
+   --------------------------------------------------------- */
+html {
+  background-color: var(--base-color-brand--orange-3);
+}
+html::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background-color: var(--base-color-brand--orange-3);
+  transform: translateY(0%);
+  pointer-events: none;
+  /* Vangnet: verdwijnt altijd, ook als de JS niet laadt */
+  animation: pt-fallback 0s 2s forwards;
+}
+html.pt-ready::after {
+  animation: none;
+  transform: translateY(-100%);
+  transition: transform 0.6s cubic-bezier(0.77, 0, 0.175, 1);
+}
+html.pt-prepare::after {
+  animation: none;
+  transform: translateY(100%);
+  transition: none;
+}
+html.pt-leave::after {
+  animation: none;
+  transform: translateY(0%);
+  transition: transform 0.6s cubic-bezier(0.77, 0, 0.175, 1);
+}
+@keyframes pt-fallback {
+  to { transform: translateY(-100%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  html::after { display: none; }
+}
 
 /* ---------------------------------------------------------
    Underline link hover
@@ -78,8 +158,24 @@
 }
 
 /* ---------------------------------------------------------
-   Parallax: geen compensatie als beweging uit staat
+   Global parallax (Osmo)
+   data-parallax="trigger" > data-parallax="target"
+   Target is 20% hoger, zodat er bij het bewegen nooit een gat ontstaat.
    --------------------------------------------------------- */
+[data-parallax="trigger"]:has(> [data-parallax="target"]) {
+  overflow: hidden;
+}
+[data-parallax="trigger"] > [data-parallax="target"] {
+  height: 120%;
+  object-fit: cover;
+  will-change: transform;
+}
+@media (max-width: 991px) {
+  [data-parallax="trigger"] > [data-parallax="target"] {
+    height: 100%;
+  }
+}
+/* Geen compensatie als beweging uit staat */
 @media (prefers-reduced-motion: reduce) {
   .over_grid { margin-bottom: 0; }
 }
@@ -96,4 +192,52 @@
 }
 [data-validate].is--success .form-field-icon.is--success {
   opacity: 1;
+}
+
+/* ---------------------------------------------------------
+   Inspiratie filter (Osmo)
+   --------------------------------------------------------- */
+.referenties_item {
+  transition: top 0.6s cubic-bezier(0.625, 0.05, 0, 1);
+}
+.referenties_item[data-filter-status="active"] {
+  transition: opacity 0.6s cubic-bezier(0.625, 0.05, 0, 1), transform 0.6s cubic-bezier(0.625, 0.05, 0, 1), top 0.6s cubic-bezier(0.625, 0.05, 0, 1);
+  transform: scale(1) rotate(0.001deg);
+  opacity: 1;
+  visibility: visible;
+  position: relative;
+}
+.referenties_item[data-filter-status="transition-out"] {
+  transition: opacity 0.45s cubic-bezier(0.625, 0.05, 0, 1), transform 0.45s cubic-bezier(0.625, 0.05, 0, 1);
+  transform: scale(0.9) rotate(0.001deg);
+  opacity: 0;
+  visibility: visible;
+}
+.referenties_item[data-filter-status="not-active"] {
+  transform: scale(0.9) rotate(0.001deg);
+  opacity: 0;
+  visibility: hidden;
+  position: absolute;
+}
+/* Verspringing: elke tweede zichtbare kaart lager (alleen desktop, tablet is 1 kolom) */
+@media (min-width: 992px) {
+  .referenties_item[data-filter-offset] { top: 6rem; }
+}
+
+/* ---------------------------------------------------------
+   Kennisbank
+   --------------------------------------------------------- */
+.kennisbank_search:has(input:focus) {
+  box-shadow: inset 0 0 0 0.0625rem rgba(27, 27, 26, 0.2);
+}
+.kennisbank_search-input::placeholder {
+  color: rgba(27, 27, 26, 0.4);
+  opacity: 1;
+}
+.kennisbank_search-input::-webkit-search-cancel-button { cursor: pointer; }
+.kennisbank_link .hero_service-icon {
+  transition: transform 0.6s cubic-bezier(0.77, 0, 0.175, 1);
+}
+.kennisbank_link:hover .hero_service-icon {
+  transform: translateX(0.375rem);
 }
