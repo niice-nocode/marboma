@@ -1,7 +1,8 @@
 /* =========================================================
    Marboma – site-wide JavaScript
    Wordt ingeladen via jsDelivr vanuit GitHub (niice-nocode/marboma)
-   Vereist (in Webflow, vóór dit script): GSAP, ScrollTrigger, SplitText, Vimeo Player API
+   Vereist (in Webflow, vóór dit script): GSAP, ScrollTrigger, SplitText, Vimeo Player API, List.js
+   Versie: v1.2.0
    ========================================================= */
 
 gsap.registerPlugin(ScrollTrigger, SplitText);
@@ -205,41 +206,85 @@ function initTabSystem() {
 }
 
 /* ---------------------------------------------------------
-   Parallax (site-breed)
-   data-parallax="10"     = element beweegt mee (hoger = sneller)
-   data-parallax-image    = afbeelding beweegt binnen zijn kader
-   data-parallax="align"  = verspringend blok, midden in beeld gelijk
-   data-parallax-trigger  = (optioneel) ouder-element dat de scroll bepaalt
+   Global parallax (Osmo)
+   data-parallax="trigger"            = scroll-trigger (en element dat beweegt als er geen target is)
+   data-parallax="target"             = (optioneel) element binnen de trigger dat beweegt
+   data-parallax-start / -end         = yPercent (of xPercent), standaard 20 / -20
+   data-parallax-direction            = vertical (standaard) | horizontal
+   data-parallax-scrub                = true (standaard) of getal
+   data-parallax-scroll-start / -end  = ScrollTrigger start/end
+   data-parallax-disable              = mobile | mobileLandscape | tablet
    --------------------------------------------------------- */
-function initParallax() {
+function initGlobalParallax() {
   const mm = gsap.matchMedia();
 
-  mm.add("(min-width: 768px) and (prefers-reduced-motion: no-preference)", () => {
-    const scroll = (trigger) => ({
-      trigger, start: "top bottom", end: "bottom top", scrub: 0.6, invalidateOnRefresh: true,
+  mm.add({
+    isMobile: "(max-width: 479px)",
+    isMobileLandscape: "(max-width: 767px)",
+    isTablet: "(max-width: 991px)",
+    isDesktop: "(min-width: 992px)",
+    reduceMotion: "(prefers-reduced-motion: reduce)",
+  }, (context) => {
+    const { isMobile, isMobileLandscape, isTablet, reduceMotion } = context.conditions;
+    if (reduceMotion) return;
+
+    const ctx = gsap.context(() => {
+      document.querySelectorAll('[data-parallax="trigger"]').forEach((trigger) => {
+        const disable = trigger.getAttribute("data-parallax-disable");
+        if (
+          (disable === "mobile" && isMobile) ||
+          (disable === "mobileLandscape" && isMobileLandscape) ||
+          (disable === "tablet" && isTablet)
+        ) return;
+
+        const target = trigger.querySelector('[data-parallax="target"]') || trigger;
+        const direction = trigger.getAttribute("data-parallax-direction") || "vertical";
+        const prop = direction === "horizontal" ? "xPercent" : "yPercent";
+
+        const scrubAttr = trigger.getAttribute("data-parallax-scrub");
+        const startAttr = trigger.getAttribute("data-parallax-start");
+        const endAttr = trigger.getAttribute("data-parallax-end");
+
+        const scrub = scrubAttr !== null ? parseFloat(scrubAttr) : true;
+        const startVal = startAttr !== null ? parseFloat(startAttr) : 20;
+        const endVal = endAttr !== null ? parseFloat(endAttr) : -20;
+
+        const scrollStart = `clamp(${trigger.getAttribute("data-parallax-scroll-start") || "top bottom"})`;
+        const scrollEnd = `clamp(${trigger.getAttribute("data-parallax-scroll-end") || "bottom top"})`;
+
+        gsap.fromTo(target, { [prop]: startVal }, {
+          [prop]: endVal,
+          ease: "none",
+          scrollTrigger: { trigger, start: scrollStart, end: scrollEnd, scrub },
+        });
+      });
     });
 
-    document.querySelectorAll('[data-parallax]:not([data-parallax="align"])').forEach((el) => {
-      const speed = parseFloat(el.dataset.parallax) || 10;
-      const trigger = el.closest("[data-parallax-trigger]") || el;
-      gsap.fromTo(el, { yPercent: speed }, { yPercent: -speed, ease: "none", scrollTrigger: scroll(trigger) });
-    });
+    return () => ctx.revert();
+  });
+}
 
-    document.querySelectorAll("[data-parallax-image]").forEach((img) => {
-      const frame = img.parentElement;
-      frame.style.overflow = "hidden";
-      gsap.fromTo(img,
-        { yPercent: -8, scale: 1.16 },
-        { yPercent: 8, scale: 1.16, ease: "none", scrollTrigger: scroll(frame) }
-      );
-    });
+/* ---------------------------------------------------------
+   Parallax align (Section / Over, middenblok)
+   data-parallax-align    = verspringend blok, schuift gelijk met de rest
+   data-parallax-trigger  = (optioneel) ouder-element dat de scroll bepaalt
+   --------------------------------------------------------- */
+function initParallaxAlign() {
+  const mm = gsap.matchMedia();
 
-    document.querySelectorAll('[data-parallax="align"]').forEach((el) => {
+  mm.add("(min-width: 992px) and (prefers-reduced-motion: no-preference)", () => {
+    document.querySelectorAll("[data-parallax-align]").forEach((el) => {
       const trigger = el.closest("[data-parallax-trigger]") || el.parentElement;
       const offset = () => parseFloat(getComputedStyle(el).marginTop) || 0;
       gsap.fromTo(el,
         { y: () => offset() * 0.5 },
-        { y: () => -offset() * 2.5, ease: "none", scrollTrigger: scroll(trigger) }
+        {
+          y: () => -offset() * 2.5,
+          ease: "none",
+          scrollTrigger: {
+            trigger, start: "top bottom", end: "bottom top", scrub: 0.6, invalidateOnRefresh: true,
+          },
+        }
       );
     });
   });
@@ -496,6 +541,231 @@ function initBasicFormValidation() {
 }
 
 /* ---------------------------------------------------------
+   Inspiratie filter (Osmo, multi match)
+   data-filter-group / data-filter-target / data-filter-name(-text)
+   --------------------------------------------------------- */
+function initBasicFilterSetupMultiMatch() {
+  const transitionDelay = 300;
+  document.querySelectorAll("[data-filter-group]").forEach((group) => {
+    const buttons = [...group.querySelectorAll("[data-filter-target]")];
+    const items = [...group.querySelectorAll("[data-filter-name]")];
+
+    // Alle categorie-labels van een kaart uitlezen
+    items.forEach((item) => {
+      const labels = [...item.querySelectorAll("[data-filter-name-text]")]
+        .map((el) => el.textContent.trim().toLowerCase())
+        .filter(Boolean);
+      if (labels.length) item.setAttribute("data-filter-name", [...new Set(labels)].join(" "));
+    });
+
+    const itemTokens = new Map();
+    items.forEach((el) => {
+      const tokens = (el.getAttribute("data-filter-name") || "").trim().toLowerCase().split(/\s+/).filter(Boolean);
+      itemTokens.set(el, new Set(tokens));
+    });
+
+    // Elke tweede zichtbare kaart krijgt de verspringing
+    const updateOffsets = () => {
+      let visibleIndex = 0;
+      items.forEach((el) => {
+        const visible = el.getAttribute("data-filter-status") === "active";
+        el.toggleAttribute("data-filter-offset", visible && visibleIndex % 2 === 1);
+        if (visible) visibleIndex++;
+      });
+    };
+
+    const setItemState = (el, on) => {
+      const next = on ? "active" : "not-active";
+      if (el.getAttribute("data-filter-status") !== next) {
+        el.setAttribute("data-filter-status", next);
+        el.setAttribute("aria-hidden", on ? "false" : "true");
+      }
+    };
+    const setButtonState = (btn, on) => {
+      btn.classList.toggle("is-active", on);
+      btn.setAttribute("data-filter-status", on ? "active" : "not-active");
+      btn.setAttribute("aria-pressed", on ? "true" : "false");
+    };
+
+    let activeTarget = "all";
+    let paintTimer = null;
+    const itemMatches = (el) => activeTarget === "all" || itemTokens.get(el).has(activeTarget);
+
+    const paint = (rawTarget) => {
+      const target = (rawTarget || "").trim().toLowerCase();
+      activeTarget = !target || target === "all" ? "all" : target;
+
+      items.forEach((el) => {
+        if (el.getAttribute("data-filter-status") === "active") {
+          el.setAttribute("data-filter-status", "transition-out");
+        }
+      });
+
+      clearTimeout(paintTimer);
+      paintTimer = setTimeout(() => {
+        items.forEach((el) => setItemState(el, itemMatches(el)));
+        updateOffsets();
+        if (window.ScrollTrigger) ScrollTrigger.refresh();
+      }, transitionDelay);
+
+      buttons.forEach((btn) => {
+        const t = (btn.getAttribute("data-filter-target") || "").trim().toLowerCase();
+        setButtonState(btn, t === activeTarget);
+      });
+    };
+
+    updateOffsets();
+
+    group.addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-filter-target]");
+      if (btn && group.contains(btn)) paint(btn.getAttribute("data-filter-target"));
+    });
+  });
+}
+
+/* ---------------------------------------------------------
+   Kennisbank (Osmo live search + categoriefilter)
+   Vereist List.js (in Webflow, vóór dit script)
+   --------------------------------------------------------- */
+function initKennisbank() {
+  if (typeof List === "undefined") return;
+  document.querySelectorAll("[data-live-search]").forEach((root) => {
+    const input = root.querySelector("[data-live-search-input]");
+    const notFound = root.querySelector("[data-live-search-not-found]");
+    const buttons = [...root.querySelectorAll("[data-kb-filter]")];
+
+    // Categorieën per artikel uit de labels halen
+    root.querySelectorAll(".kennisbank_list > *").forEach((item) => {
+      const cats = [...item.querySelectorAll("[data-kb-category]")]
+        .map((el) => el.textContent.trim().toLowerCase());
+      item.setAttribute("data-kb-categories", cats.join(" "));
+    });
+
+    const list = new List(root, {
+      listClass: "kennisbank_list",
+      valueNames: ["live-search__name", "live-search__keywords"],
+      fuzzySearch: { location: 0, distance: 1000, threshold: 0.3 },
+    });
+
+    let activeCat = "all";
+
+    const updateNotFound = () => {
+      if (!notFound) return;
+      const q = (input && input.value ? input.value : "").trim();
+      const none = list.matchingItems.length === 0;
+      notFound.style.display = none ? "block" : "none";
+      const p = notFound.querySelector("p");
+      if (p) p.textContent = q
+        ? `Geen artikelen gevonden voor "${q}".`
+        : "Er staan nog geen artikelen in deze categorie.";
+      if (window.ScrollTrigger) ScrollTrigger.refresh();
+    };
+
+    const applyFilter = () => {
+      if (activeCat === "all") { list.filter(); return; }
+      list.filter((item) =>
+        (item.elm.getAttribute("data-kb-categories") || "").split(" ").includes(activeCat)
+      );
+    };
+
+    const runSearch = () => {
+      const q = (input && input.value ? input.value : "").trim();
+      if (!q) list.search();
+      else if (typeof list.fuzzySearch === "function") list.fuzzySearch(q);
+      else list.search(q, ["live-search__name", "live-search__keywords"]);
+      updateNotFound();
+    };
+
+    if (input) input.addEventListener("input", runSearch);
+
+    buttons.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        activeCat = (btn.getAttribute("data-kb-filter") || "all").toLowerCase();
+        buttons.forEach((b) => {
+          const on = b === btn;
+          b.classList.toggle("is-active", on);
+          b.setAttribute("data-filter-status", on ? "active" : "not-active");
+          b.setAttribute("aria-pressed", on ? "true" : "false");
+        });
+        applyFilter();
+        updateNotFound();
+      });
+    });
+
+    list.search();
+    updateNotFound();
+  });
+}
+
+/* ---------------------------------------------------------
+   Page transition
+   Overlay = html::after (zie marboma.css). Uit in de Webflow Editor.
+   --------------------------------------------------------- */
+function initPageTransition() {
+  const html = document.documentElement;
+  const DURATION = 600;
+
+  const inEditor = () =>
+    (window.Webflow && Webflow.env && Webflow.env("editor")) ||
+    /[?&]edit/.test(location.search) ||
+    html.classList.contains("w-editor");
+
+  // Binnenkomen: oranje vlak schuift omhoog weg
+  const reveal = () => {
+    if (inEditor()) { html.classList.add("pt-ready"); return; }
+    requestAnimationFrame(() => {
+      html.classList.remove("pt-prepare", "pt-leave");
+      html.classList.add("pt-ready");
+    });
+  };
+
+  if (document.readyState === "complete") reveal();
+  else window.addEventListener("load", reveal);
+
+  // Terug-knop (bfcache): overlay altijd weg
+  window.addEventListener("pageshow", (e) => { if (e.persisted) reveal(); });
+
+  // Weggaan via interne links
+  document.addEventListener("click", (e) => {
+    if (inEditor()) return;
+
+    const a = e.target.closest("a");
+    if (!a) return;
+
+    const href = a.getAttribute("href");
+    if (!href || href.charAt(0) === "#") return;
+    if (a.target === "_blank" || a.hasAttribute("download")) return;
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+    if (/^(mailto:|tel:|javascript:)/i.test(href)) return;
+
+    const url = new URL(a.href, location.href);
+    if (url.origin !== location.origin) return;
+    if (url.pathname === location.pathname && url.hash) return; // anker op dezelfde pagina
+
+    e.preventDefault();
+
+    let done = false;
+    const go = () => {
+      if (done) return;
+      done = true;
+      location.href = url.href;
+    };
+
+    html.classList.remove("pt-ready");
+    html.classList.add("pt-prepare");
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        html.classList.remove("pt-prepare");
+        html.classList.add("pt-leave");
+        // Pas doorgaan als het vlak volledig dicht is
+        setTimeout(go, DURATION + 50);
+      });
+    });
+  });
+}
+
+/* ---------------------------------------------------------
    Init
    --------------------------------------------------------- */
 function initMarboma() {
@@ -503,9 +773,12 @@ function initMarboma() {
   initHighlightText();
   initCSSMarquee();
   initTabSystem();
-  initParallax();
+  initGlobalParallax();
+  initParallaxAlign();
   initLineRevealTestimonials();
   initBasicFormValidation();
+  initBasicFilterSetupMultiMatch();
+  initKennisbank();
 }
 
 if (document.readyState === "loading") {
@@ -513,3 +786,6 @@ if (document.readyState === "loading") {
 } else {
   initMarboma();
 }
+
+// Page transition direct starten (wacht niet op DOMContentLoaded)
+initPageTransition();
