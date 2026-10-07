@@ -2,7 +2,7 @@
    Marboma – site-wide JavaScript
    Wordt ingeladen via jsDelivr vanuit GitHub (niice-nocode/marboma)
    Vereist (in Webflow, vóór dit script): GSAP, ScrollTrigger, SplitText, Vimeo Player API, List.js
-   Versie: v1.2.0
+   Versie: v1.2.1
    ========================================================= */
 
 gsap.registerPlugin(ScrollTrigger, SplitText);
@@ -456,6 +456,10 @@ function initBasicFormValidation() {
       const value = input.value.trim();
       if (input.type === "email") {
         valid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+      } else if (input.type === "tel") {
+        // Telefoon: 10 t/m 13 cijfers; spaties, streepjes, haakjes en + toegestaan
+        const digits = value.replace(/\D/g, "");
+        valid = /^[+\d\s\-()]+$/.test(value) && digits.length >= 10 && digits.length <= 13;
       } else {
         if (input.hasAttribute("min") && value.length < min) valid = false;
         if (input.hasAttribute("max") && value.length > max) valid = false;
@@ -512,7 +516,7 @@ function initBasicFormValidation() {
         const min = parseInt(input.getAttribute("min")) || 0;
         const max = parseInt(input.getAttribute("max")) || Infinity;
         if (!input.__validationStarted) {
-          if (input.type === "email") {
+          if (input.type === "email" || input.type === "tel") {
             if (isValid(fieldGroup)) input.__validationStarted = true;
           } else if ((input.hasAttribute("min") && length >= min) || (input.hasAttribute("max") && length <= max)) {
             input.__validationStarted = true;
