@@ -241,3 +241,17 @@ html.pt-leave::after {
 .kennisbank_link:hover .hero_service-icon {
   transform: translateX(0.375rem);
 }
+
+/* ==========================================================================
+   Hero: focuspunt op mobiel (prop "Focuspunt mobiel" op Pagina / Hero)
+   ========================================================================== */
+@media (max-width: 767px) {
+  .hero_image[data-focus="links"]       { object-position: 0% 50%; }
+  .hero_image[data-focus="rechts"]      { object-position: 100% 50%; }
+  .hero_image[data-focus="boven"]       { object-position: 50% 0%; }
+  .hero_image[data-focus="onder"]       { object-position: 50% 100%; }
+  .hero_image[data-focus="linksboven"]  { object-position: 0% 0%; }
+  .hero_image[data-focus="rechtsboven"] { object-position: 100% 0%; }
+  .hero_image[data-focus="linksonder"]  { object-position: 0% 100%; }
+  .hero_image[data-focus="rechtsonder"] { object-position: 100% 100%; }
+}
