@@ -243,15 +243,10 @@ html.pt-leave::after {
 }
 
 /* ==========================================================================
-   Hero: focuspunt op mobiel (prop "Focuspunt mobiel" op Pagina / Hero)
+   Hero: focuspunt op mobiel (zie initHeroFocus in marboma.js)
    ========================================================================== */
 @media (max-width: 767px) {
-  .hero_image[data-focus="links"]       { object-position: 0% 50%; }
-  .hero_image[data-focus="rechts"]      { object-position: 100% 50%; }
-  .hero_image[data-focus="boven"]       { object-position: 50% 0%; }
-  .hero_image[data-focus="onder"]       { object-position: 50% 100%; }
-  .hero_image[data-focus="linksboven"]  { object-position: 0% 0%; }
-  .hero_image[data-focus="rechtsboven"] { object-position: 100% 0%; }
-  .hero_image[data-focus="linksonder"]  { object-position: 0% 100%; }
-  .hero_image[data-focus="rechtsonder"] { object-position: 100% 100%; }
+  .hero_image {
+    object-position: var(--focus-x, 50%) var(--focus-y, 50%);
+  }
 }
