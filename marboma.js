@@ -772,7 +772,24 @@ function initPageTransition() {
 /* ---------------------------------------------------------
    Init
    --------------------------------------------------------- */
+/* ==========================================================================
+   Hero focuspunt op mobiel
+   Props "Focus mobiel horizontaal/verticaal (%)" op Pagina / Hero zetten
+   data-focus-x / data-focus-y (0-100). Wordt via CSS alleen op mobiel gebruikt.
+   ========================================================================== */
+function initHeroFocus() {
+  document.querySelectorAll(".hero_image[data-focus-x], .hero_image[data-focus-y]").forEach((img) => {
+    const clamp = (v) => {
+      const n = parseFloat(v);
+      return isNaN(n) ? 50 : Math.min(100, Math.max(0, n));
+    };
+    img.style.setProperty("--focus-x", clamp(img.dataset.focusX) + "%");
+    img.style.setProperty("--focus-y", clamp(img.dataset.focusY) + "%");
+  });
+}
+
 function initMarboma() {
+  initHeroFocus();
   initVimeoBGVideo();
   initHighlightText();
   initCSSMarquee();
