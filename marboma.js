@@ -704,6 +704,7 @@ function initKennisbank() {
 /* ---------------------------------------------------------
    Page transition
    Overlay = html::after (zie marboma.css). Uit in de Webflow Editor.
+   Alleen bij weggaan via een interne link; bij openen geen overlay.
    --------------------------------------------------------- */
 function initPageTransition() {
   const html = document.documentElement;
@@ -714,20 +715,10 @@ function initPageTransition() {
     /[?&]edit/.test(location.search) ||
     html.classList.contains("w-editor");
 
-  // Binnenkomen: oranje vlak schuift omhoog weg
-  const reveal = () => {
-    if (inEditor()) { html.classList.add("pt-ready"); return; }
-    requestAnimationFrame(() => {
-      html.classList.remove("pt-prepare", "pt-leave");
-      html.classList.add("pt-ready");
-    });
-  };
-
-  if (document.readyState === "complete") reveal();
-  else window.addEventListener("load", reveal);
-
-  // Terug-knop (bfcache): overlay altijd weg
-  window.addEventListener("pageshow", (e) => { if (e.persisted) reveal(); });
+  // Terug-knop (bfcache): overlay weghalen
+  window.addEventListener("pageshow", (e) => {
+    if (e.persisted) html.classList.remove("pt-prepare", "pt-leave");
+  });
 
   // Weggaan via interne links
   document.addEventListener("click", (e) => {
@@ -755,7 +746,6 @@ function initPageTransition() {
       location.href = url.href;
     };
 
-    html.classList.remove("pt-ready");
     html.classList.add("pt-prepare");
 
     requestAnimationFrame(() => {
