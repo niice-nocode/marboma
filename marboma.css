@@ -56,28 +56,17 @@ html::after {
   inset: 0;
   z-index: 9999;
   background-color: var(--base-color-brand--orange-3);
-  transform: translateY(0%);
-  pointer-events: none;
-  /* Vangnet: verdwijnt altijd, ook als de JS niet laadt */
-  animation: pt-fallback 0s 2s forwards;
-}
-html.pt-ready::after {
-  animation: none;
+  /* Standaard weg: bij het openen van een pagina geen overlay */
   transform: translateY(-100%);
-  transition: transform 0.6s cubic-bezier(0.77, 0, 0.175, 1);
+  pointer-events: none;
 }
 html.pt-prepare::after {
-  animation: none;
   transform: translateY(100%);
   transition: none;
 }
 html.pt-leave::after {
-  animation: none;
   transform: translateY(0%);
   transition: transform 0.6s cubic-bezier(0.77, 0, 0.175, 1);
-}
-@keyframes pt-fallback {
-  to { transform: translateY(-100%); }
 }
 @media (prefers-reduced-motion: reduce) {
   html::after { display: none; }
